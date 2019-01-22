@@ -45,8 +45,8 @@ def main():
 
     logger.debug('coinbasepro version: %s', __version__)
 
-    with CoinbaseproScraper() as cb_scraper:
-        cb_scraper.start()
+    with CoinbaseproScraper():
+        pass
 
 
 if __name__ == "__main__":

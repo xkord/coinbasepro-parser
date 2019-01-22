@@ -175,4 +175,5 @@ class CoinbaseproScraper:
 
 
 if __name__ == '__main__':
-    CoinbaseproScraper().start()
+    with CoinbaseproScraper():
+        pass
