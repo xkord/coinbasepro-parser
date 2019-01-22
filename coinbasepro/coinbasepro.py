@@ -97,28 +97,21 @@ class CoinbaseproScraper:
                     logger.info("Starting to get orders for %s", target)
                     all_info = []
                     order = self.get_order(target)
-                    base_asset = 'USD'
-                    quote_asset = target
-                    pair = base_asset + "-" + quote_asset
-                    business_dttm = self.batch_dttm
 
                     for asks in order['asks']:
-                        price = asks[0]
-                        amount = asks[1]
-                        id = asks[2]
-                        order_type = 'ask'
                         result = {
-                            "id": id,
-                            "order_type": order_type,
-                            "pair": pair,
-                            "base_asset": base_asset,
-                            "quote_asset": quote_asset,
-                            "price": price,
-                            "amount": amount,
-                            "business_dttm": business_dttm
+                            "id": asks[2],
+                            "order_type": 'ask',
+                            "pair": 'USD' + "-" + target,
+                            "base_asset": 'USD',
+                            "quote_asset": target,
+                            "price": asks[0],
+                            "amount": asks[1],
+                            "business_dttm": self.batch_dttm
                         }
                         all_info.append(result)
                         print(result)
+
                     for bids in order['bids']:
                         price = bids[0]
                         amount = bids[1]
@@ -127,12 +120,12 @@ class CoinbaseproScraper:
                         result = {
                             "id": id,
                             "order_type": order_type,
-                            "pair": pair,
-                            "base_asset": base_asset,
-                            "quote_asset": quote_asset,
+                            "pair": 'USD' + "-" + target,
+                            "base_asset": 'USD',
+                            "quote_asset": target,
                             "price": price,
                             "amount": amount,
-                            "business_dttm": business_dttm
+                            "business_dttm": self.batch_dttm
                         }
                         all_info.append(result)
                         print(result)
@@ -148,30 +141,22 @@ class CoinbaseproScraper:
                     trades = self.get_trades(target)
 
                     all_info = []
-                    base_asset = 'USD'
-                    quote_asset = target
-                    pair = base_asset + "-" + quote_asset
 
                     for trade in trades:
-                        id = trade['trade_id']
-                        active_side = trade['side']
-                        price = trade['price']
-                        amount = trade['size']
                         business_dttm = trade['time']
                         time_obj = parse(business_dttm)
                         unixtime = int(time.mktime(time_obj.timetuple()))
-                        # print(unixtime)
                         if unixtime < from_time:
                             break
 
                         result = {
-                            "id": id,
-                            "active_side": active_side,
-                            "pair": pair,
-                            "base_asset": base_asset,
-                            "quote_asset": quote_asset,
-                            "price": price,
-                            "amount": amount,
+                            "id": trade['trade_id'],
+                            "active_side": trade['side'],
+                            "pair": 'USD' + "-" + target,
+                            "base_asset": 'USD',
+                            "quote_asset": target,
+                            "price": trade['price'],
+                            "amount": trade['size'],
                             "business_dttm": unixtime
                         }
                         all_info.append(result)
@@ -180,7 +165,8 @@ class CoinbaseproScraper:
                     if self.database:
                         for item in all_info:
                             self.database.insert_trades(item)
-                    rabbit_mq_send(all_info)
+                    if self.rmq_channel:
+                        self.rmq_send(all_info)
 
 
 if __name__ == '__main__':
