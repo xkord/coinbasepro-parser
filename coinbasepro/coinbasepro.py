@@ -71,7 +71,12 @@ class CoinbaseproScraper:
                                            body=json.dumps(info))
 
     def get_order(self, val):
-        order_book = self.pc.get_product_order_book(val + '-USD', level=int(e('ORDER_LEVEL')))
+        if e('ORDER_LEVEL'):
+            order_level = 2
+        else:
+            order_level = int(e('ORDER_LEVEL'))
+
+        order_book = self.pc.get_product_order_book(val + '-USD', level=order_level)
         return order_book
 
     def get_trades(self, val):
