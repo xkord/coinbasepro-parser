@@ -14,28 +14,6 @@ logger = logging.getLogger("LOG")
 e = os.environ.get
 
 
-def rabbit_mq_send(all_info):
-    if all([e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'), e('RABBIT_HOST'), e('RABBIT_EXCHANGE')]):
-        try:
-            credentials = pika.PlainCredentials(e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'))
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host=e('RABBIT_HOST'),
-                                                                           credentials=credentials))
-            channel = connection.channel()
-
-            channel.exchange_declare(exchange=e('RABBIT_EXCHANGE'), exchange_type='fanout')
-
-            for info in all_info:
-                channel.basic_publish(exchange=e('RABBIT_EXCHANGE'),
-                                      routing_key='',
-                                      body=json.dumps(info))
-            connection.close()
-        except Exception as error:
-            logger.critical("Exception working with rabbitmq: %s", error)
-    else:
-        logger.critical("Please set ENV for rabbitmq")
-        # exit(0)
-
-
 def database_init():
     if all([e('DATABASE'), e('LOGIN'), e('HOST'), e('PASSWORD')]):
         db = Database(e('DATABASE'), e('LOGIN'), e('HOST'),
@@ -53,14 +31,44 @@ class CoinbaseproScraper:
 
     def __init__(self):
         self.batch_dttm = time.time()
+        self.rmq_conn = None
+        self.rmq_channel = None
         self.database = database_init()
         self.pc = cbpro.PublicClient()
 
     def __enter__(self):
+        self.rmq_open()
         self.start()
 
     def __exit__(self, type, value, traceback):
-        pass
+        self.rmq_close()
+
+    def rmq_open(self):
+        if all([e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'), e('RABBIT_HOST'), e('RABBIT_EXCHANGE')]):
+            try:
+                credentials = pika.PlainCredentials(e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'))
+                self.rmq_conn = pika.BlockingConnection(pika.ConnectionParameters(host=e('RABBIT_HOST'),
+                                                                                  credentials=credentials))
+                self.rmq_channel = self.rmq_conn.channel()
+
+                self.rmq_channel.exchange_declare(exchange=e('RABBIT_EXCHANGE'), exchange_type='fanout')
+            except Exception as error:
+                logger.critical("Exception working with rabbitmq: %s", error)
+        else:
+            logger.critical("Please set ENV for rabbitmq")
+
+    def rmq_close(self):
+        try:
+            if self.rmq_conn:
+                self.rmq_conn.close()
+        except Exception as error:
+            logger.critical("Exception closing rabbitmq: %s", error)
+
+    def rmq_send(self, all_info):
+        for info in all_info:
+            self.rmq_channel.basic_publish(exchange=e('RABBIT_EXCHANGE'),
+                                           routing_key='',
+                                           body=json.dumps(info))
 
     def get_order(self, val):
         order_book = self.pc.get_product_order_book(val + '-USD', level=int(e('ORDER_LEVEL')))
@@ -128,10 +136,12 @@ class CoinbaseproScraper:
                         }
                         all_info.append(result)
                         print(result)
+
                     if self.database:
                         for item in all_info:
                             self.database.insert_orders(item)
-                    rabbit_mq_send(all_info)
+                    if self.rmq_channel:
+                        self.rmq_send(all_info)
 
                 if e('TRADES'):
                     logger.info("Starting to get trades for %s", target)
