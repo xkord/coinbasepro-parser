@@ -14,6 +14,7 @@ queue_name = result.method.queue
 channel.queue_bind(exchange='coinbasepro',
                    queue=queue_name)
 
+
 def callback(ch, method, properties, body):
     print(" [x] %r" % body)
 

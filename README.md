@@ -32,21 +32,26 @@ CREATE USER coinbasepro WITH password 'YOUR_PASSWORD';
 GRANT ALL privileges ON DATABASE coinbasepro TO coinbasepro;
 ```
 
-        
 ## Использование
 
 Необходимо задать переменные окружения для работы скрипта:
 
-		HOST = '127.0.0.1'
-		DATABASE = 'coinbasepro'
-		LOGIN = 'coinbasepro'
-		PASSWORD = 'coinbasepro_password'
+    	HOST = '127.0.0.1'
+    	DATABASE = 'coinbasepro'
+    	LOGIN = 'coinbasepro'
+    	PASSWORD = 'coinbasepro_password'
 
-		# For rabbitmq
-		RABBIT_HOST = '127.0.0.1'
-		RABBIT_EXCHANGE = 'coinbasepro'
-		RABBIT_LOGIN = 'guest'
-		RABBIT_PASSWORD = 'guest'
+    	# For rabbitmq
+    	RABBIT_HOST = '127.0.0.1'
+    	RABBIT_EXCHANGE = 'coinbasepro'
+    	RABBIT_LOGIN = 'guest'
+    	RABBIT_PASSWORD = 'guest'
+
+    	ENV ORDER_LEVEL 2
+    	ENV ORDERS 1
+    	#ENV TRADES 1
+    	#ENV FROM_TIME 1547751930
+    	ENV TARGET BTC,ETH
 
 ```sh
 python mq_server.py

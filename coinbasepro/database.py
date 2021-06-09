@@ -137,4 +137,3 @@ class Database:
             self.conn.rollback()
             logger.critical("Exception: %s", e)
             return False
-

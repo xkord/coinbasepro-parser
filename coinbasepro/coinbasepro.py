@@ -1,12 +1,12 @@
-import os
-import time
 import json
 import logging
-import pika
-import cbpro
+import os
 import time
-import datetime
+
+import cbpro
+import pika
 from dateutil.parser import parse
+
 from coinbasepro.database import Database
 
 logger = logging.getLogger("LOG")
@@ -22,9 +22,8 @@ def database_init():
         db.create_coinbasepro_trades_table()
         return db
     else:
-        # logger.critical("Please set ENV for database")
+        logger.critical("Please set ENV for database")
         return None
-        # exit(0)
 
 
 class CoinbaseproScraper:
@@ -46,12 +45,14 @@ class CoinbaseproScraper:
     def rmq_open(self):
         if all([e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'), e('RABBIT_HOST'), e('RABBIT_EXCHANGE')]):
             try:
-                credentials = pika.PlainCredentials(e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'))
+                credentials = pika.PlainCredentials(
+                    e('RABBIT_LOGIN'), e('RABBIT_PASSWORD'))
                 self.rmq_conn = pika.BlockingConnection(pika.ConnectionParameters(host=e('RABBIT_HOST'),
                                                                                   credentials=credentials))
                 self.rmq_channel = self.rmq_conn.channel()
 
-                self.rmq_channel.exchange_declare(exchange=e('RABBIT_EXCHANGE'), exchange_type='fanout')
+                self.rmq_channel.exchange_declare(exchange=e(
+                    'RABBIT_EXCHANGE'), exchange_type='fanout')
             except Exception as error:
                 logger.critical("Exception working with rabbitmq: %s", error)
         else:
@@ -76,7 +77,8 @@ class CoinbaseproScraper:
         else:
             order_level = int(e('ORDER_LEVEL'))
 
-        order_book = self.pc.get_product_order_book(val + '-USD', level=order_level)
+        order_book = self.pc.get_product_order_book(
+            val + '-USD', level=order_level)
         return order_book
 
     def get_trades(self, val):
